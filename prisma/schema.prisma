@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// 1. 顧客テーブル
+model Customer {
+  id                        String    @id @default(uuid())
+  customerCode              String    @unique // 顧客コード
+  companyName               String              // 会社名
+  department                String?             // 部署名
+  contactName               String?             // 担当者名
+  postalCode                String?             // 郵便番号
+  address                   String?             // 住所
+  invoiceRegistrationNumber String?             // インボイス登録番号
+  paymentTerms              String?             // 支払条件
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  invoices                  Invoice[]
+}
+
+// 2. 請求書ヘッダーテーブル
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique // 請求書番号
+  issueDate     DateTime              // 発行日
+  dueDate       DateTime              // 支払期日
+  subtotal      Float                 // 小計
+  taxAmount     Float                 // 消費税
+  totalAmount   Float                 // 税込合計
+  status        String        @default("DRAFT") // DRAFT, ISSUED, PAID
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+
+  items         InvoiceItem[]
+}
+
+// 3. 請求書明細テーブル
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  itemName    String   // 品目・内容
+  quantity    Int      // 数量
+  unitPrice   Float    // 単価
+  taxRate     Float    // 税率（0.10 や 0.08）
+  amount      Float    // 金額
+
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
